@@ -92,6 +92,7 @@ def initialize_google_ads_client():
         "client_secret": st.secrets["client_secret"],
         "refresh_token": st.secrets["refresh_token"],
         "login_customer_id": st.secrets["client_customer_id"]
+        "use_proto_plus" : true
     }
     return GoogleAdsClient.load_from_dict(google_ads_config)
 
@@ -207,7 +208,7 @@ if submit_button:
         else:
             geo_target = country_name_to_criteria_id[selected_country]
             try:
-                data = process_keywords_in_batches(google_ads_client, CLIENT_CUSTOMER_ID, keywords, geo_target, LANGUAGE_CODE)
+                data = process_keywords_in_batches(google_ads_client, client_customer_id, keywords, geo_target, LANGUAGE_CODE)
                 
                 # Check if any keywords are missing after all batches
                 processed_keywords = {result['Keyword'] for result in data}
