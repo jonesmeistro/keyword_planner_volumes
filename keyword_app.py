@@ -9,7 +9,6 @@ from ratelimit import limits, sleep_and_retry
 # Constants
 BATCH_SIZE = 9999
 MAX_KEYWORDS = 200000
-CLIENT_CUSTOMER_ID = "3026379800"
 LANGUAGE_CODE = "1000"
 RETRY_LIMIT = 3
 RETRY_DELAY = 3  # Delay between retries in seconds
@@ -88,11 +87,11 @@ def generate_historical_metrics(client, customer_id, keywords, geo_target, langu
 
 def initialize_google_ads_client():
     google_ads_config = {
-        "developer_token": st.secrets["google_ads"]["developer_token"],
-        "client_id": st.secrets["google_ads"]["client_id"],
-        "client_secret": st.secrets["google_ads"]["client_secret"],
-        "refresh_token": st.secrets["google_ads"]["refresh_token"],
-        "login_customer_id": CLIENT_CUSTOMER_ID,
+        "developer_token": st.secrets["developer_token"],
+        "client_id": st.secrets["client_id"],
+        "client_secret": st.secrets["client_secret"],
+        "refresh_token": st.secrets["refresh_token"],
+        "login_customer_id": st.secrets["CLIENT_CUSTOMER_ID"]
     }
     return GoogleAdsClient.load_from_dict(google_ads_config)
 
