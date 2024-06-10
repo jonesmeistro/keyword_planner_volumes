@@ -12,7 +12,7 @@ MAX_KEYWORDS = 200000
 LANGUAGE_CODE = "1000"
 RETRY_LIMIT = 3
 RETRY_DELAY = 3  # Delay between retries in seconds
-"CLIENT_CUSTOMER_ID" = st.secrets["client_customer_id"],
+"CLIENT_CUSTOMER_ID" == st.secrets["client_customer_id"],
 
 
 # Path for country codes CSV
