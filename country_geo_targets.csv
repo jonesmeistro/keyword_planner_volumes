@@ -1,0 +1,219 @@
+﻿Criteria ID,Name,Country Code
+2004,Afghanistan,AF
+2008,Albania,AL
+2010,Antarctica,AQ
+2012,Algeria,DZ
+2016,American Samoa,AS
+2020,Andorra,AD
+2024,Angola,AO
+2028,Antigua and Barbuda,AG
+2031,Azerbaijan,AZ
+2032,Argentina,AR
+2036,Australia,AU
+2040,Austria,AT
+2044,The Bahamas,BS
+2048,Bahrain,BH
+2050,Bangladesh,BD
+2051,Armenia,AM
+2052,Barbados,BB
+2056,Belgium,BE
+2064,Bhutan,BT
+2068,Bolivia,BO
+2070,Bosnia and Herzegovina,BA
+2072,Botswana,BW
+2076,Brazil,BR
+2084,Belize,BZ
+2090,Solomon Islands,SB
+2096,Brunei,BN
+2100,Bulgaria,BG
+2104,Myanmar (Burma),MM
+2108,Burundi,BI
+2112,Belarus,BY
+2116,Cambodia,KH
+2120,Cameroon,CM
+2124,Canada,CA
+2132,Cabo Verde,CV
+2140,Central African Republic,CF
+2144,Sri Lanka,LK
+2148,Chad,TD
+2152,Chile,CL
+2156,China,CN
+2162,Christmas Island,CX
+2166,Cocos (Keeling) Islands,CC
+2170,Colombia,CO
+2174,Comoros,KM
+2178,Republic of the Congo,CG
+2180,Democratic Republic of the Congo,CD
+2184,Cook Islands,CK
+2188,Costa Rica,CR
+2191,Croatia,HR
+2196,Cyprus,CY
+2203,Czechia,CZ
+2204,Benin,BJ
+2208,Denmark,DK
+2212,Dominica,DM
+2214,Dominican Republic,DO
+2218,Ecuador,EC
+2222,El Salvador,SV
+2226,Equatorial Guinea,GQ
+2231,Ethiopia,ET
+2232,Eritrea,ER
+2233,Estonia,EE
+2239,South Georgia and the South Sandwich Islands,GS
+2242,Fiji,FJ
+2246,Finland,FI
+2250,France,FR
+2258,French Polynesia,PF
+2260,French Southern and Antarctic Lands,TF
+2262,Djibouti,DJ
+2266,Gabon,GA
+2268,Georgia,GE
+2270,The Gambia,GM
+2276,Germany,DE
+2288,Ghana,GH
+2296,Kiribati,KI
+2300,Greece,GR
+2308,Grenada,GD
+2316,Guam,GU
+2320,Guatemala,GT
+2324,Guinea,GN
+2328,Guyana,GY
+2332,Haiti,HT
+2334,Heard Island and McDonald Islands,HM
+2336,Vatican City,VA
+2340,Honduras,HN
+2348,Hungary,HU
+2352,Iceland,IS
+2356,India,IN
+2360,Indonesia,ID
+2368,Iraq,IQ
+2372,Ireland,IE
+2376,Israel,IL
+2380,Italy,IT
+2384,Cote d'Ivoire,CI
+2388,Jamaica,JM
+2392,Japan,JP
+2398,Kazakhstan,KZ
+2400,Jordan,JO
+2404,Kenya,KE
+2410,South Korea,KR
+2414,Kuwait,KW
+2417,Kyrgyzstan,KG
+2418,Laos,LA
+2422,Lebanon,LB
+2426,Lesotho,LS
+2428,Latvia,LV
+2430,Liberia,LR
+2434,Libya,LY
+2438,Liechtenstein,LI
+2440,Lithuania,LT
+2442,Luxembourg,LU
+2450,Madagascar,MG
+2454,Malawi,MW
+2458,Malaysia,MY
+2462,Maldives,MV
+2466,Mali,ML
+2470,Malta,MT
+2478,Mauritania,MR
+2480,Mauritius,MU
+2484,Mexico,MX
+2492,Monaco,MC
+2496,Mongolia,MN
+2498,Moldova,MD
+2499,Montenegro,ME
+2504,Morocco,MA
+2508,Mozambique,MZ
+2512,Oman,OM
+2516,Namibia,NA
+2520,Nauru,NR
+2524,Nepal,NP
+2528,Netherlands,NL
+2531,Curacao,CW
+2534,Sint Maarten,SX
+2535,Caribbean Netherlands,BQ
+2540,New Caledonia,NC
+2548,Vanuatu,VU
+2554,New Zealand,NZ
+2558,Nicaragua,NI
+2562,Niger,NE
+2566,Nigeria,NG
+2570,Niue,NU
+2574,Norfolk Island,NF
+2578,Norway,NO
+2580,Northern Mariana Islands,MP
+2581,United States Minor Outlying Islands,UM
+2583,Micronesia,FM
+2584,Marshall Islands,MH
+2585,Palau,PW
+2586,Pakistan,PK
+2591,Panama,PA
+2598,Papua New Guinea,PG
+2600,Paraguay,PY
+2604,Peru,PE
+2608,Philippines,PH
+2612,Pitcairn Islands,PN
+2616,Poland,PL
+2620,Portugal,PT
+2624,Guinea-Bissau,GW
+2626,Timor-Leste,TL
+2634,Qatar,QA
+2642,Romania,RO
+2643,Russia,RU
+2646,Rwanda,RW
+2652,Saint Barthelemy,BL
+2654,"Saint Helena, Ascension and Tristan da Cunha",SH
+2659,Saint Kitts and Nevis,KN
+2662,Saint Lucia,LC
+2663,Saint Martin,MF
+2666,Saint Pierre and Miquelon,PM
+2670,Saint Vincent and the Grenadines,VC
+2674,San Marino,SM
+2678,Sao Tome and Principe,ST
+2682,Saudi Arabia,SA
+2686,Senegal,SN
+2688,Serbia,RS
+2690,Seychelles,SC
+2694,Sierra Leone,SL
+2702,Singapore,SG
+2703,Slovakia,SK
+2704,Vietnam,VN
+2705,Slovenia,SI
+2706,Somalia,SO
+2710,South Africa,ZA
+2716,Zimbabwe,ZW
+2724,Spain,ES
+2728,South Sudan,SS
+2736,Sudan,SD
+2740,Suriname,SR
+2748,Eswatini,SZ
+2752,Sweden,SE
+2756,Switzerland,CH
+2762,Tajikistan,TJ
+2764,Thailand,TH
+2768,Togo,TG
+2772,Tokelau,TK
+2776,Tonga,TO
+2780,Trinidad and Tobago,TT
+2784,United Arab Emirates,AE
+2788,Tunisia,TN
+2792,Turkiye,TR
+2795,Turkmenistan,TM
+2798,Tuvalu,TV
+2800,Uganda,UG
+2804,Ukraine,UA
+2807,North Macedonia,MK
+2818,Egypt,EG
+2826,United Kingdom,GB
+2831,Guernsey,GG
+2832,Jersey,JE
+2833,Isle of Man,IM
+2834,Tanzania,TZ
+2840,United States,US
+2854,Burkina Faso,BF
+2858,Uruguay,UY
+2860,Uzbekistan,UZ
+2862,Venezuela,VE
+2876,Wallis and Futuna,WF
+2882,Samoa,WS
+2887,Yemen,YE
+2894,Zambia,ZM
