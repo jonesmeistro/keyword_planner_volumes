@@ -52,9 +52,9 @@ def call_generate_historical_metrics(client, customer_id, keywords, geo_target, 
     return generate_historical_metrics(client, customer_id, keywords, geo_target, language_code)
 
 def generate_historical_metrics(client, customer_id, keywords, geo_target, language_code):
-    googleads_service = client.get_service("GoogleAdsService", version="v14")
-    keyword_plan_idea_service = client.get_service("KeywordPlanIdeaService", version="v14")
-    request = client.get_type("GenerateKeywordHistoricalMetricsRequest", version="v14")
+    googleads_service = client.get_service("GoogleAdsService", version="v17")
+    keyword_plan_idea_service = client.get_service("KeywordPlanIdeaService", version="v17")
+    request = client.get_type("GenerateKeywordHistoricalMetricsRequest", version="v17")
     request.customer_id = customer_id
     request.keywords.extend(keywords)
     request.geo_target_constants.append(
