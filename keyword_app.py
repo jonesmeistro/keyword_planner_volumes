@@ -91,7 +91,8 @@ def initialize_google_ads_client():
         "client_id": st.secrets["client_id"],
         "client_secret": st.secrets["client_secret"],
         "refresh_token": st.secrets["refresh_token"],
-        "login_customer_id": st.secrets["client_customer_id"],
+        "login_customer_id" : st.secrets["login_customer_id"]
+        "client_customer_id": st.secrets["client_customer_id"],
         "use_proto_plus" : "True"
     }
     return GoogleAdsClient.load_from_dict(google_ads_config)
