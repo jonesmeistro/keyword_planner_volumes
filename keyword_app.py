@@ -5,6 +5,8 @@ from google.ads.googleads.client import GoogleAdsClient
 from google.ads.googleads.errors import GoogleAdsException
 from datetime import datetime
 from ratelimit import limits, sleep_and_retry
+import random
+
 
 # Constants
 BATCH_SIZE = 9999
@@ -154,9 +156,11 @@ def process_batch(client, customer_id, keywords, geo_target, language_code):
             return batch_results
         except GoogleAdsException as ex:
             retry_count += 1
-            time.sleep(RETRY_DELAY)
+            backoff_time = RETRY_DELAY * (2 ** (retry_count - 1)) + random.uniform(0, 1)
+            time.sleep(backoff_time)
             if retry_count == RETRY_LIMIT:
                 raise ex
+
 
 def process_keywords_in_batches(client, customer_id, keywords, geo_target, language_code):
     all_results = []
@@ -173,7 +177,7 @@ def process_keywords_in_batches(client, customer_id, keywords, geo_target, langu
         if missing_batch_keywords:
             log_missing_keywords(missing_batch_keywords)
         
-        # Wait 3 seconds before processing the next batch
+        # Wait 30 seconds before processing the next batch to avoid quota limits
         time.sleep(30)
     
     # Retry processing missing keywords
@@ -187,7 +191,7 @@ def process_keywords_in_batches(client, customer_id, keywords, geo_target, langu
             remaining_missing_keywords = set(batch_keywords) - result_keywords
             if remaining_missing_keywords:
                 log_missing_keywords(remaining_missing_keywords)
-            time.sleep(3)
+            time.sleep(30)
 
     return all_results
 
