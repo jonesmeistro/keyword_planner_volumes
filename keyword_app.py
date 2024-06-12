@@ -174,7 +174,7 @@ def process_keywords_in_batches(client, customer_id, keywords, geo_target, langu
             log_missing_keywords(missing_batch_keywords)
         
         # Wait 3 seconds before processing the next batch
-        time.sleep(3)
+        time.sleep(30)
     
     # Retry processing missing keywords
     missing_keywords = [keyword for keyword in keywords if keyword not in {result['Keyword'] for result in all_results}]
