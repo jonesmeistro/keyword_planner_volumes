@@ -3,20 +3,13 @@ import pandas as pd
 import time
 from google.ads.googleads.client import GoogleAdsClient
 from google.ads.googleads.errors import GoogleAdsException
-from datetime import datetime
-from ratelimit import limits, sleep_and_retry
-import random
-
+from io import StringIO
 
 # Constants
-BATCH_SIZE = 9999
-MAX_KEYWORDS = 200000
-LANGUAGE_CODE = "1000"
-RETRY_LIMIT = 1
-RETRY_DELAY = 30  # Delay between retries in seconds
 CLIENT_CUSTOMER_ID = st.secrets["client_customer_id"]
-str(CLIENT_CUSTOMER_ID)
-
+LANGUAGE_CODE = "1000"
+BATCH_SIZE = 9999
+RETRY_WAIT_TIME = 30  # Extended wait time to avoid hitting API limits
 
 # Path for country codes CSV
 country_geo_targets_path = "country_geo_targets.csv"
@@ -48,9 +41,6 @@ country_name_to_criteria_id = {
     row['Name']: row['Criteria ID'] for index, row in country_geo_targets_df.iterrows()
 }
 
-# Rate limit the function to 1 call per second (60 calls per minute)
-@sleep_and_retry
-@limits(calls=1, period=1)
 def call_generate_historical_metrics(client, customer_id, keywords, geo_target, language_code):
     return generate_historical_metrics(client, customer_id, keywords, geo_target, language_code)
 
@@ -81,6 +71,10 @@ def generate_historical_metrics(client, customer_id, keywords, geo_target, langu
         result_dict = {
             "Keyword": result.text,
             "Monthly Search Estimated": metrics.avg_monthly_searches,
+            "3 Month Change": None,
+            "12 Month Change": None,
+            "Average 12 Month Change": None,
+            "Average 3 Month Change": None,
             "Competition Level": metrics.competition.name,
             "Top of Page Bid Low Range": metrics.low_top_of_page_bid_micros,
             "Top of Page Bid High Range": metrics.high_top_of_page_bid_micros,
@@ -96,23 +90,25 @@ def initialize_google_ads_client():
         "client_id": st.secrets["client_id"],
         "client_secret": st.secrets["client_secret"],
         "refresh_token": st.secrets["refresh_token"],
-        "login_customer_id" : st.secrets["login_customer_id"],
-        "use_proto_plus" : "True"
+        "login_customer_id": st.secrets["login_customer_id"],
+        "use_proto_plus": "True"
     }
     return GoogleAdsClient.load_from_dict(google_ads_config)
+
+def extract_keywords_from_text(keywords_text, num_keywords):
+    keywords = keywords_text.split("\n")[:num_keywords]
+    keywords = [kw.strip() for kw in keywords if kw.strip()]
+    return keywords
 
 def calculate_changes(df):
     month_columns = [col for col in df.columns if '-' in col]
     latest_month = month_columns[-1]
-    oldest_month = month_columns[0]
 
-    # Calculate 3 Month Change if there are at least 4 months of data
     if len(month_columns) >= 4:
         df['3 Month Change'] = ((df[latest_month] - df[month_columns[-4]]) / df[month_columns[-4]] * 100).round(2)
     else:
         df['3 Month Change'] = None
 
-    # Calculate 12 Month Change if there are at least 12 months of data
     if len(month_columns) >= 12:
         df['12 Month Change'] = ((df[latest_month] - df[month_columns[-12]]) / df[month_columns[-12]] * 100).round(2)
     else:
@@ -125,144 +121,159 @@ def calculate_changes(df):
         df[f'Change_{prev_month}_to_{curr_month}'] = ((df[curr_month] - df[prev_month]) / df[prev_month] * 100).round(2)
 
     # Calculate the average 12-month change
-    if len(month_columns) >= 12:
-        change_columns_12_months = [f'Change_{month_columns[i - 1]}_to_{month_columns[i]}' for i in range(1, 12)]
-        df['Average 12 Month Change'] = df[change_columns_12_months].mean(axis=1).round(2)
-    else:
-        df['Average 12 Month Change'] = None
+    change_columns_12_months = [f'Change_{month_columns[i - 1]}_to_{month_columns[i]}' for i in range(1, 12)]
+    df['Average 12 Month Change'] = df[change_columns_12_months].mean(axis=1).round(2)
 
     # Calculate the average 3-month change
-    if len(month_columns) >= 3:
-        change_columns_3_months = [f'Change_{month_columns[i - 1]}_to_{month_columns[i]}' for i in range(-3, 0)]
-        df['Average 3 Month Change'] = df[change_columns_3_months].mean(axis=1).round(2)
-    else:
-        df['Average 3 Month Change'] = None
+    change_columns_3_months = change_columns_12_months[-3:]
+    df['Average 3 Month Change'] = df[change_columns_3_months].mean(axis=1).round(2)
 
     # Drop the individual month-to-month change columns
-    df.drop(columns=[col for col in df.columns if col.startswith('Change_')], inplace=True)
+    df.drop(columns=change_columns_12_months, inplace=True)
 
     return df
 
-def log_missing_keywords(missing_keywords):
-    with open('missing_keywords.log', 'a', encoding='utf-8') as f:
-        for keyword in missing_keywords:
-            f.write(f"{keyword}\n")
+# Split keywords into batches
+def split_keywords_into_batches(keywords, batch_size):
+    for i in range(0, len(keywords), batch_size):
+        yield keywords[i:i + batch_size]
 
-def process_batch(client, customer_id, keywords, geo_target, language_code):
-    retry_count = 0
-    while retry_count < RETRY_LIMIT:
-        try:
-            batch_results = call_generate_historical_metrics(client, customer_id, keywords, geo_target, language_code)
-            return batch_results
-        except GoogleAdsException as ex:
-            retry_count += 1
-            backoff_time = RETRY_DELAY * (2 ** (retry_count - 1)) + random.uniform(0, 1)
-            time.sleep(backoff_time)
-            if retry_count == RETRY_LIMIT:
-                raise ex
+# Retry logic
+def retry_missed_keywords(client, customer_id, missed_keywords, geo_target, language_code, max_attempts=3):
+    attempt = 0
+    remaining_keywords = missed_keywords
+    processed_keywords = set()
 
+    while remaining_keywords and attempt < max_attempts:
+        attempt += 1
+        st.write(f"Attempt {attempt} to process {len(remaining_keywords)} missed keywords...")
+        keyword_batches = list(split_keywords_into_batches(remaining_keywords, BATCH_SIZE))
 
-def process_keywords_in_batches(client, customer_id, keywords, geo_target, language_code):
-    all_results = []
-    total_keywords = len(keywords)
-    
-    for i in range(0, total_keywords, BATCH_SIZE):
-        batch_keywords = keywords[i:i + BATCH_SIZE]
-        batch_results = process_batch(client, customer_id, batch_keywords, geo_target, language_code)
-        all_results.extend(batch_results)
-        
-        # Ensure all batch keywords are accounted for in the results
-        result_keywords = {result['Keyword'] for result in batch_results}
-        missing_batch_keywords = set(batch_keywords) - result_keywords
-        if missing_batch_keywords:
-            log_missing_keywords(missing_batch_keywords)
-        
-        # Wait 30 seconds before processing the next batch to avoid quota limits
-        time.sleep(30)
-    
-    # Retry processing missing keywords
-    missing_keywords = [keyword for keyword in keywords if keyword not in {result['Keyword'] for result in all_results}]
-    if missing_keywords:
-        for i in range(0, len(missing_keywords), BATCH_SIZE):
-            batch_keywords = missing_keywords[i:i + BATCH_SIZE]
-            batch_results = process_batch(client, customer_id, batch_keywords, geo_target, language_code)
-            all_results.extend(batch_results)
-            result_keywords = {result['Keyword'] for result in batch_results}
-            remaining_missing_keywords = set(batch_keywords) - result_keywords
-            if remaining_missing_keywords:
-                log_missing_keywords(remaining_missing_keywords)
-            time.sleep(30)
-
-    return all_results
-
-# Streamlit UI
-st.title("Google Ads Keyword Data Fetcher")
-
-# Initialize Google Ads client using Streamlit secrets
-google_ads_client = initialize_google_ads_client()
-
-with st.form(key='keyword_form'):
-    keyword_text = st.text_area("Paste your keywords here (one per line):", height=200)
-    keywords = [k.strip() for k in keyword_text.split('\n') if k.strip()]
-
-    selected_country = st.selectbox("Country:", all_countries_sorted)
-    submit_button = st.form_submit_button(label='Fetch Data')
-
-if submit_button:
-    if keywords and selected_country:
-        if len(keywords) > MAX_KEYWORDS:
-            st.error(f"Please limit the number of keywords to {MAX_KEYWORDS}.")
-        else:
-            geo_target = country_name_to_criteria_id[selected_country]
+        for batch_num, batch in enumerate(keyword_batches, start=1):
+            st.write(f"Processing retry batch {batch_num} of {len(keyword_batches)}...")
             try:
-                data = process_keywords_in_batches(google_ads_client, CLIENT_CUSTOMER_ID, keywords, geo_target, LANGUAGE_CODE)
-                
-                # Check if any keywords are missing after all batches
-                processed_keywords = {result['Keyword'] for result in data}
-                missing_keywords = set(keywords) - processed_keywords
-                if missing_keywords:
-                    log_missing_keywords(missing_keywords)
-
+                data = call_generate_historical_metrics(client, customer_id, batch, geo_target, language_code)
                 if data:
                     df = pd.DataFrame(data)
                     df = calculate_changes(df)
 
-                    # Rename columns
-                    df.rename(columns={
-                        'text': 'Keyword',
-                        'approximate_monthly_searches': 'Monthly Search Estimated',
-                        'competition_level': 'Competition Level',
-                        'top_of_page_bid_low_range': 'Top of Page Bid Low Range',
-                        'top_of_page_bid_high_range': 'Top of Page Bid High Range'
-                    }, inplace=True)
+                    # Save the DataFrame to a CSV file
+                    df.to_csv('C:\\Users\\cjones01\\Downloads\\keyword_data.csv', mode='a', header=False, index=False)
+                    st.write(f"Data for {len(df)} keywords saved to CSV.")
 
-                    # Re-arrange columns
-                    new_column_order = [
-                        'Keyword', 'Monthly Search Estimated', 'Competition Level', 
-                        'Top of Page Bid Low Range', 'Top of Page Bid High Range',
-                        '3 Month Change', '12 Month Change', 
-                        'Average 12 Month Change', 'Average 3 Month Change'
-                    ] + [col for col in df.columns if '-' in col]
-
-                    df = df[new_column_order]
-
-                    st.success("Data fetched successfully!")
-                    st.dataframe(df)
-                    csv = df.to_csv(index=False)
-                    st.download_button(
-                        label="Download CSV",
-                        data=csv,
-                        file_name='keyword_data.csv',
-                        mime='text/csv',
-                    )
+                    # Update processed keywords and remaining keywords
+                    processed_keywords.update(df['Keyword'].tolist())
+                    remaining_keywords = [kw for kw in remaining_keywords if kw not in processed_keywords]
                 else:
-                    st.warning("No data returned for the specified keywords.")
+                    st.write(f"No data returned for retry batch {batch_num}.")
             except GoogleAdsException as ex:
-                st.error(f"Request failed: {ex.error.code().name}")
+                st.write(f"Request failed on attempt {attempt}, batch {batch_num}: {ex.error.code().name}")
                 for error in ex.failure.errors:
-                    st.error(f"Error with message: {error.message}")
+                    st.write(f"Error with message: {error.message}")
                     if error.location:
                         for field_path_element in error.location.field_path_elements:
-                            st.error(f"On field: {field_path_element.field_name}")
+                            st.write(f"On field: {field_path_element.field_name}")
+
+            if remaining_keywords:
+                st.write(f"Waiting for {RETRY_WAIT_TIME} seconds before retrying...")
+                time.sleep(RETRY_WAIT_TIME)
+
+    return remaining_keywords
+
+# Streamlit app
+st.title('Keyword Historical Metrics Generator')
+
+st.write("""
+Enter your keywords (one per line) in the text box below. You can input up to 100,000 keywords. The app will process these keywords and provide historical metrics data.
+""")
+
+# Country selection dropdown
+country = st.selectbox("Select a country:", all_countries_sorted)
+
+keywords_text = st.text_area("Enter keywords here:", height=300)
+
+# Text box for user messages
+message_box = st.empty()
+
+if st.button('Generate Metrics'):
+    keywords = extract_keywords_from_text(keywords_text, 100000)
+    total_keywords = len(keywords)
+
+    if total_keywords == 0:
+        st.error("Please enter at least one keyword.")
     else:
-        st.error("Please provide keywords and select a country.")
+        google_ads_client = initialize_google_ads_client()
+        message_box.write(f"Total keywords: {total_keywords}")
+
+        batches = list(split_keywords_into_batches(keywords, BATCH_SIZE))
+        total_batches = len(batches)
+        message_box.write(f"Splitting into {total_batches} batches.")
+
+        all_results = []
+        processed_keywords = set()  # To keep track of all processed keywords
+        not_pulled_keywords = []
+
+        geo_target = country_name_to_criteria_id[country]
+
+        for batch_number, batch in enumerate(batches, start=1):
+            message_box.write(f"Processing batch {batch_number} of {total_batches}...")
+            try:
+                data = call_generate_historical_metrics(google_ads_client, CLIENT_CUSTOMER_ID, batch, geo_target, LANGUAGE_CODE)
+                
+                if data:
+                    df = pd.DataFrame(data)
+                    df = calculate_changes(df)
+
+                    all_results.append(df)
+                    batch_count = len(df)
+                    message_box.write(f"Got data for {batch_count} keywords from batch {batch_number}.")
+
+                    # Track processed keywords
+                    processed_keywords.update(df['Keyword'].tolist())
+
+                else:
+                    message_box.write(f"No data returned for batch {batch_number}.")
+                
+                # Track missed keywords
+                missed_keywords = [kw for kw in batch if kw not in processed_keywords]
+                not_pulled_keywords.extend(missed_keywords)
+                message_box.write(f"Missed {len(missed_keywords)} keywords in batch {batch_number}.")
+
+            except GoogleAdsException as ex:
+                message_box.write(f"Request failed: {ex.error.code().name}")
+                for error in ex.failure.errors:
+                    message_box.write(f"Error with message: {error.message}")
+                    if error.location:
+                        for field_path_element in error.location.field_path_elements:
+                            message_box.write(f"On field: {field_path_element.field_name}")
+                not_pulled_keywords.extend(batch)
+                message_box.write(f"Batch {batch_number} failed.")
+
+            # Wait for 5 seconds before the next batch
+            message_box.write("Waiting for 5 seconds before the next batch...")
+            time.sleep(5)
+
+        # Retry missed keywords up to 2 more times
+        message_box.write("Cleaning up and processing any missed keywords, this could take up to 2 minutes. Please standby.")
+        not_pulled_keywords = retry_missed_keywords(google_ads_client, CLIENT_CUSTOMER_ID, not_pulled_keywords, geo_target, LANGUAGE_CODE, max_attempts=3)
+
+        # Combine all results into a single DataFrame
+        if all_results:
+            final_df = pd.concat(all_results, ignore_index=True)
+            # Reorder the columns
+            cols = list(final_df.columns)
+            reordered_cols = cols[:2] + ["3 Month Change", "12 Month Change", "Average 12 Month Change", "Average 3 Month Change"] + cols[2:4] + cols[6:]
+            final_df = final_df[reordered_cols]
+            csv_data = final_df.to_csv(index=False)
+        else:
+            csv_data = ""
+
+        # Provide download button for the captured data CSV file
+        st.download_button(
+            label="Download Captured Data",
+            data=csv_data,
+            file_name='captured_keyword_data.csv',
+            mime='text/csv'
+        )
+
+        message_box.write("Processing complete.")
